@@ -21,7 +21,7 @@ class ApplicationController < ActionController::Base
   protected
   #Force a user to login if ldap authentication is enabled
   def require_login
-    return true unless $settings[:ldap]
+    return true unless SETTINGS[:ldap]
     unless (session[:user] and (@user = User.find(session[:user])))
       session[:original_uri] = request.request_uri
       redirect_to :controller => "users", :action => "login"
