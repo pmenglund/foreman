@@ -1,8 +1,25 @@
 require 'rubygems'
 require 'fileutils'
+require 'pathname'
 
 module GW
+  module Logger
+    def logger
+      if defined? RAILS_DEFAULT_LOGGER
+        # If we are running as a library in a rails app then use the provided logger
+        RAILS_DEFAULT_LOGGER
+      else
+        # We must make our own ruby based logger if we are a standalone proxy server
+        require 'logger'
+        # We keep the last 6 10MB log files
+        l = Logger.new("/var/log/proxy", 6, 10*1024)
+        l.severity = Logger::DEBUG
+        l
+      end
+    end
+  end
   class Tftp
+    extend GW::Logger
     # creates TFTP link to a predefine syslinux config file
     # parameter is a array ["mac",'osname','arch'...]
     # e.g. ["00:11:22:33:44:55:66:77",'centos','i386'...]
@@ -50,16 +67,27 @@ module GW
   end
 
   class Puppetca
-    # removes old certificate if it exists and removes autosign entry
+    extend GW::Logger
+    # removes old certificate if it exists
     # parameter is the fqdn to use
-    @sbin = "/usr/sbin"
+    @sbin      = "/usr/sbin"
     @puppetdir = "/etc/puppet"
+    @ssldir    = "/var/lib/puppet/ssl"
 
     def self.clean fqdn
+      ssldir = Pathname.new @ssldir
+      unless (ssldir + "ca").directory? and File.exists? "#{@sbin}/puppetca"
+        logger.error "PuppetCA: SSL/CA or puppetca unavailable on this machine"
+        return false
+      end
       begin
-        if File.exists? "#{@sbin}/puppetca"
+        if (ssldir + "ca/signed/#{fqdn}.pem").file?
           command = "/usr/bin/sudo -S #{@sbin}/puppetca --clean #{fqdn}< /dev/null"
-          system "#{command} >> /tmp/puppetca.log 2>&1"
+          logger.info system(command)
+          return true
+        else
+          logger.warn ssldir + "PuppetCA: ca/signed/#{fqdn}.pem does not exists - skipping"
+          return true
         end
       rescue StandardError => e
         logger.info "PuppetCA: clean failed: #{e}"
