@@ -32,6 +32,10 @@ class Host < Puppet::Rails::Host
     end
   }
 
+  named_scope :with, lambda { |*arg| { :conditions =>
+    "(puppet_status >> #{Report::BIT_NUM*Report::METRIC.index(arg[0])} & #{Report::MAX}) > #{arg[1] || 0}"}
+  }
+
   # audit the changes to this model
   acts_as_audited :except => [:last_report, :puppet_status, :last_compile]
 

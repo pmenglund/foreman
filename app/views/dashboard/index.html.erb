@@ -14,6 +14,7 @@
           -%>
 
   <h2>Errors</h2>
+  <p>Hosts that had performed modifications <%= link_to @bad_hosts, :action => "errors" %></p>
   <p>Out Of Sync Hosts <%= link_to @out_of_sync_hosts, :action => "OutOfSync" %></p>
   <p>Hosts in Error State <%= link_to @bad_hosts, :action => "errors" %></p>
   <p>Reports to Review <%= link_to @intersting_reports, :action => "reports" %></p>
